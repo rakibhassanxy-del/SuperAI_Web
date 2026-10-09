@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout - Super AI Typing</title>
-    <!-- Favicon (Browser Tab Logo) -->
+    <!-- Favicon -->
     <link rel="icon" type="image/png" href="logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
-<body class="bg-slate-50 flex flex-col min-h-screen font-sans antialiased">
+<body class="bg-slate-50 flex flex-col min-h-screen font-sans antialiased relative">
 
     <!-- Header -->
-    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center">
@@ -21,7 +21,7 @@
                     <span class="font-black text-xl text-slate-800 tracking-tight">Super AI Typing</span>
                 </div>
                 <div class="text-sm font-bold text-slate-500 hidden sm:block">
-                    নিরাপদ পেমেন্ট গেটওয়ে
+                    নিরাপদ পেমেন্ট গেটওয়ে
                 </div>
             </div>
         </div>
@@ -30,7 +30,6 @@
     <!-- Main Content -->
     <main class="flex-grow flex items-center justify-center p-4 py-12">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full p-6 md:p-8 relative overflow-hidden">
-            <!-- Decorative Top Border -->
             <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-yellow-400 via-emerald-500 to-sky-500"></div>
             
             <div class="text-center mb-8">
@@ -111,13 +110,52 @@
                 <input type="text" id="trxInput" placeholder="যে নম্বর থেকে টাকা পাঠিয়েছেন অথবা TrxID দিন..." class="w-full border-2 border-slate-300 rounded-xl p-4 font-bold text-slate-800 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all">
             </div>
 
-            <div id="statusMsg" class="hidden text-center font-bold text-sky-600 mb-5 p-3 rounded-lg bg-sky-50 border border-sky-100"></div>
-
             <button id="submitBtn" onclick="submitTransaction()" class="w-full bg-emerald-500 text-white font-bold text-lg py-4 rounded-xl hover:bg-emerald-600 active:transform active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/30 flex justify-center items-center">
                 <span>সাবমিট করুন</span>
             </button>
         </div>
     </main>
+
+    <!-- 🚀 NEW: Awesome Processing Overlay (Blur + Loader + Cancel) -->
+    <div id="processingOverlay" class="fixed inset-0 z-[100] hidden flex flex-col items-center justify-center backdrop-blur-md bg-slate-900/60 transition-all duration-300">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-[90%] mx-auto transform transition-all border-2 border-emerald-500">
+            
+            <!-- State 1: Loading & Verifying -->
+            <div id="overlayLoading" class="block">
+                <!-- Spinning Loader -->
+                <svg class="animate-spin h-14 w-14 text-emerald-500 mx-auto mb-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <h3 class="text-xl font-black text-slate-800 mb-2">পেমেন্ট ভেরিফাই করা হচ্ছে</h3>
+                <p id="overlayTimerText" class="text-emerald-600 font-bold mb-6 text-lg">অপেক্ষা করুন... (30s)</p>
+                <button onclick="cancelChecking()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 hover:text-red-600 text-slate-600 font-bold rounded-lg transition-colors text-sm w-full">
+                    ❌ চেকিং ক্যানসেল করুন
+                </button>
+            </div>
+            
+            <!-- State 2: Success -->
+            <div id="overlaySuccess" class="hidden">
+                <div class="w-20 h-20 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl shadow-inner border-4 border-emerald-50">✅</div>
+                <h3 class="text-2xl font-black text-slate-800 mb-2">পেমেন্ট সফল!</h3>
+                <p class="text-slate-500 font-medium text-sm mb-6">আপনার PRO ফিচার আনলক করা হয়েছে। ব্রাউজারটি বন্ধ করা হচ্ছে...</p>
+                <button onclick="window.close()" class="w-full px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors shadow-lg">
+                    অ্যাপে ফিরে যান
+                </button>
+            </div>
+
+            <!-- State 3: Error / Timeout -->
+            <div id="overlayError" class="hidden">
+                <div class="w-20 h-20 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl shadow-inner border-4 border-red-50">❌</div>
+                <h3 class="text-2xl font-black text-slate-800 mb-2">ভেরিফিকেশন ব্যর্থ!</h3>
+                <p id="overlayErrorText" class="text-slate-500 font-medium text-sm mb-6">সার্ভার থেকে কোনো রেসপন্স পাওয়া যায়নি।</p>
+                <button onclick="closeOverlay()" class="w-full px-5 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors shadow-lg">
+                    আবার চেষ্টা করুন
+                </button>
+            </div>
+
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 mt-auto">
@@ -151,6 +189,9 @@
         const urlParams = new URLSearchParams(window.location.search);
         const userPhone = urlParams.get('phone') || "Unknown User";
         document.getElementById('phoneInput').value = userPhone;
+
+        let checkTimer;
+        let currentTrxRef = null;
 
         function copyNumber(text, btn) {
             navigator.clipboard.writeText(text);
@@ -207,18 +248,15 @@
             }
 
             const pkg = getPackageDetails();
-            const submitBtn = document.getElementById('submitBtn');
-            const statusMsg = document.getElementById('statusMsg');
 
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = "অপেক্ষা করুন...";
-            submitBtn.classList.replace("bg-emerald-500", "bg-slate-400");
-            submitBtn.classList.replace("hover:bg-emerald-600", "hover:bg-slate-400");
-            
+            // 🚀 Show Overlay Loader
+            document.getElementById('processingOverlay').classList.remove('hidden');
+            document.getElementById('overlayLoading').classList.remove('hidden');
+            document.getElementById('overlaySuccess').classList.add('hidden');
+            document.getElementById('overlayError').classList.add('hidden');
+
             let timeLeft = 30;
-            statusMsg.classList.remove("hidden");
-            statusMsg.className = "text-center font-bold text-sky-600 mb-5 p-3 rounded-lg bg-sky-50 border border-sky-100 block";
-            statusMsg.innerText = `⏳ আপনার পেমেন্টটি ভেরিফাই করা হচ্ছে... (${timeLeft}s)`;
+            document.getElementById('overlayTimerText').innerText = `অপেক্ষা করুন... (${timeLeft}s)`;
 
             const transactionData = {
                 phone: userPhone,
@@ -230,28 +268,74 @@
                 date: formatDate()
             };
 
+            // 🚀 Push to Firebase
             db.ref('transactions/' + trxId).set(transactionData)
             .then(() => {
-                const timer = setInterval(() => {
+                
+                // 🚀 Start Real-time Firebase Listener
+                currentTrxRef = db.ref('transactions/' + trxId + '/status');
+                currentTrxRef.on('value', (snapshot) => {
+                    const status = snapshot.val();
+                    if (status === 'approved' || status === 'auto_approved') {
+                        handleSuccess();
+                    } else if (status === 'rejected' || status === 'cancelled') {
+                        handleError("পেমেন্ট রিজেক্ট করা হয়েছে। আপনার ট্রানজেকশন আইডি সঠিক নয়।");
+                    }
+                });
+
+                // 🚀 Start 30s Countdown
+                checkTimer = setInterval(() => {
                     timeLeft--;
                     if (timeLeft > 0) {
-                        statusMsg.innerText = `⏳ আপনার পেমেন্টটি ভেরিফাই করা হচ্ছে... (${timeLeft}s)`;
+                        document.getElementById('overlayTimerText').innerText = `অপেক্ষা করুন... (${timeLeft}s)`;
                     } else {
-                        clearInterval(timer);
-                        statusMsg.className = "text-center font-bold text-amber-600 mb-5 p-3 rounded-lg bg-amber-50 border border-amber-100 block";
-                        statusMsg.innerText = "✅ পেমেন্ট রিসিভ হয়েছে! অ্যাডমিন চেক করে শীঘ্রই আপনার একাউন্ট অ্যাক্টিভ করে দেবেন। আপনি অ্যাপে ফিরে যেতে পারেন।";
-                        submitBtn.innerHTML = "অ্যাপ্রুভালের অপেক্ষায়";
+                        // Timeout logic
+                        clearInterval(checkTimer);
+                        if(currentTrxRef) currentTrxRef.off(); // stop listening
+                        handleError("টাইমআউট! অ্যাডমিন এখনো চেক করেননি। আপনি কিছুক্ষণ পর অ্যাপে ফিরে গিয়ে চেক করতে পারেন।");
                     }
                 }, 1000);
+
             })
             .catch((error) => {
-                statusMsg.className = "text-center font-bold text-red-600 mb-5 p-3 rounded-lg bg-red-50 border border-red-100 block";
-                statusMsg.innerText = `❌ ডাটাবেসে কানেক্ট করা যায়নি: ${error.message}`;
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = "আবার সাবমিট করুন";
-                submitBtn.classList.replace("bg-slate-400", "bg-emerald-500");
-                submitBtn.classList.replace("hover:bg-slate-400", "hover:bg-emerald-600");
+                handleError(`ডাটাবেসে কানেক্ট করা যায়নি: ${error.message}`);
             });
+        }
+
+        // 🚀 Success Handler
+        function handleSuccess() {
+            clearInterval(checkTimer);
+            if(currentTrxRef) currentTrxRef.off();
+
+            document.getElementById('overlayLoading').classList.add('hidden');
+            document.getElementById('overlaySuccess').classList.remove('hidden');
+
+            // 🚀 ব্রাউজার অটো-ক্লোজ ট্রিকস (২ সেকেন্ড পর)
+            setTimeout(() => {
+                window.close(); // যদি ব্রাউজার সিকিউরিটি পারমিট করে তবে সাথে সাথে কেটে যাবে
+            }, 2000);
+        }
+
+        // 🚀 Error Handler
+        function handleError(msg) {
+            clearInterval(checkTimer);
+            if(currentTrxRef) currentTrxRef.off();
+
+            document.getElementById('overlayLoading').classList.add('hidden');
+            document.getElementById('overlayError').classList.remove('hidden');
+            document.getElementById('overlayErrorText').innerText = msg;
+        }
+
+        // 🚀 Cancel Function
+        function cancelChecking() {
+            clearInterval(checkTimer);
+            if(currentTrxRef) currentTrxRef.off();
+            closeOverlay();
+        }
+
+        // 🚀 Close Overlay Function
+        function closeOverlay() {
+            document.getElementById('processingOverlay').classList.add('hidden');
         }
     </script>
 </body>
