@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout - Super AI Typing</title>
-    <!-- Favicon (Browser Tab Logo) -->
+    <!-- Favicon -->
     <link rel="icon" type="image/png" href="logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -30,7 +30,6 @@
     <!-- Main Content -->
     <main class="flex-grow flex items-center justify-center p-4 py-12">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full p-6 md:p-8 relative overflow-hidden">
-            <!-- Decorative Top Border -->
             <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-yellow-400 via-emerald-500 to-sky-500"></div>
             
             <div class="text-center mb-8">
@@ -174,7 +173,7 @@
     </footer>
 
     <script>
-        // 🚀 আপনার রিয়েল ফায়ারবেস কনফিগারেশন
+        // 🚀 আপনার রিয়েল ফায়ারবেস কনফিগারেশন 
         const firebaseConfig = {
             apiKey: "AIzaSyB-NCmudmSQnEry-RsgS-IEUq9mxrR8WgM",
             authDomain: "super-ai-typing.firebaseapp.com",
@@ -261,7 +260,7 @@
             let timeLeft = 30;
             document.getElementById('overlayTimerText').innerText = `অপেক্ষা করুন... (${timeLeft}s)`;
 
-            // 🚀 Start Timer Immediately
+            // Start Timer Immediately
             checkTimer = setInterval(() => {
                 timeLeft--;
                 if (timeLeft > 0) {
@@ -286,8 +285,12 @@
 
             const updates = {};
             updates['/transactions/' + trxId] = transactionData;
+            
+            // ইউজারের প্রোফাইলে ডেটা আপডেট করা হচ্ছে
             updates['/users/' + userPhone + '/status'] = 'pending_verification';
             updates['/users/' + userPhone + '/pending_trx'] = trxId;
+            updates['/users/' + userPhone + '/package'] = pkg.name;
+            updates['/users/' + userPhone + '/expire_date'] = calculateExpireDate(pkg.days);
 
             // Push all updates at once
             db.ref().update(updates)
