@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout - Super AI Typing</title>
-    <!-- Favicon -->
+    <!-- Favicon (Browser Tab Logo) -->
     <link rel="icon" type="image/png" href="logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -30,6 +30,7 @@
     <!-- Main Content -->
     <main class="flex-grow flex items-center justify-center p-4 py-12">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full p-6 md:p-8 relative overflow-hidden">
+            <!-- Decorative Top Border -->
             <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-yellow-400 via-emerald-500 to-sky-500"></div>
             
             <div class="text-center mb-8">
@@ -116,7 +117,7 @@
         </div>
     </main>
 
-    <!-- 🚀 NEW: Awesome Processing Overlay (Blur + Loader + Cancel) -->
+    <!-- 🚀 Awesome Processing Overlay (Blur + Loader + Cancel) -->
     <div id="processingOverlay" class="fixed inset-0 z-[100] hidden flex flex-col items-center justify-center backdrop-blur-md bg-slate-900/60 transition-all duration-300">
         <div class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-[90%] mx-auto transform transition-all border-2 border-emerald-500">
             
@@ -173,7 +174,7 @@
     </footer>
 
     <script>
-        // 🚀 আপনার রিয়েল ফায়ারবেস কনফিগারেশন 
+        // 🚀 আপনার রিয়েল ফায়ারবেস কনফিগারেশন
         const firebaseConfig = {
             apiKey: "AIzaSyB-NCmudmSQnEry-RsgS-IEUq9mxrR8WgM",
             authDomain: "super-ai-typing.firebaseapp.com",
@@ -184,7 +185,6 @@
             appId: "1:172185984183:web:747204766f1097d9ea4132"
         };
         
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -237,15 +237,16 @@
                 return;
             }
 
-            let trxId = rawTrx;
+            let trxId = rawTrx.replace(/[.#$\[\]\/]/g, ""); 
             let resellerId = "";
+            
             if (rawTrx.includes("//")) {
                 let parts = rawTrx.split("//");
-                trxId = parts[0].trim();
+                trxId = parts[0].trim().replace(/[.#$\[\]\/]/g, "");
                 resellerId = parts[1].trim().toUpperCase();
             } else if (rawTrx.includes(" ")) {
                 let parts = rawTrx.split(" ");
-                trxId = parts[0].trim();
+                trxId = parts[0].trim().replace(/[.#$\[\]\/]/g, "");
                 resellerId = parts[1].trim().toUpperCase();
             }
 
@@ -260,82 +261,76 @@
             let timeLeft = 30;
             document.getElementById('overlayTimerText').innerText = `অপেক্ষা করুন... (${timeLeft}s)`;
 
+            // 🚀 Start Timer Immediately
+            checkTimer = setInterval(() => {
+                timeLeft--;
+                if (timeLeft > 0) {
+                    document.getElementById('overlayTimerText').innerText = `অপেক্ষা করুন... (${timeLeft}s)`;
+                } else {
+                    clearInterval(checkTimer);
+                    if(currentTrxRef) currentTrxRef.off();
+                    handleError("টাইমআউট! অ্যাডমিন এখনো চেক করেননি। আপনি কিছুক্ষণ পর অ্যাপে ফিরে গিয়ে চেক করতে পারেন।");
+                }
+            }, 1000);
+
+            // 🚀 THE FIX: Data Structure matched and pushed to both locations
             const transactionData = {
                 phone: userPhone,
                 package: pkg.name,
                 expire_date: calculateExpireDate(pkg.days),
                 amount: pkg.amount,
                 reseller_id: resellerId,
-                status: 'pending',
+                status: 'pending', 
                 date: formatDate()
             };
 
-            // 🚀 Push to Firebase Realtime Database
-            db.ref('transactions/' + trxId).set(transactionData)
+            const updates = {};
+            updates['/transactions/' + trxId] = transactionData;
+            updates['/users/' + userPhone + '/status'] = 'pending_verification';
+            updates['/users/' + userPhone + '/pending_trx'] = trxId;
+
+            // Push all updates at once
+            db.ref().update(updates)
             .then(() => {
-                
-                // 🚀 Start Real-time Firebase Listener
-                currentTrxRef = db.ref('transactions/' + trxId + '/status');
+                // Listen to the user's status directly, exactly like the desktop app's `ProUpgradeChecker`!
+                currentTrxRef = db.ref('users/' + userPhone + '/status');
                 currentTrxRef.on('value', (snapshot) => {
                     const status = snapshot.val();
-                    if (status === 'approved' || status === 'auto_approved') {
+                    if (status === 'pro') {  // Desktop app looks for 'pro'
                         handleSuccess();
-                    } else if (status === 'rejected' || status === 'cancelled') {
+                    } else if (status === 'free') { // Desktop app downgrades to 'free'
                         handleError("পেমেন্ট রিজেক্ট করা হয়েছে। আপনার ট্রানজেকশন আইডি সঠিক নয়।");
                     }
                 });
-
-                // 🚀 Start 30s Countdown
-                checkTimer = setInterval(() => {
-                    timeLeft--;
-                    if (timeLeft > 0) {
-                        document.getElementById('overlayTimerText').innerText = `অপেক্ষা করুন... (${timeLeft}s)`;
-                    } else {
-                        // Timeout logic
-                        clearInterval(checkTimer);
-                        if(currentTrxRef) currentTrxRef.off(); // stop listening
-                        handleError("টাইমআউট! অ্যাডমিন এখনো চেক করেননি। আপনি কিছুক্ষণ পর অ্যাপে ফিরে গিয়ে চেক করতে পারেন।");
-                    }
-                }, 1000);
-
             })
             .catch((error) => {
-                handleError(`ডাটাবেসে কানেক্ট করা যায়নি: ${error.message}`);
+                clearInterval(checkTimer);
+                handleError(`ডাটাবেস কানেকশন এরর: ${error.message}`);
             });
         }
 
-        // 🚀 Success Handler
         function handleSuccess() {
             clearInterval(checkTimer);
             if(currentTrxRef) currentTrxRef.off();
-
             document.getElementById('overlayLoading').classList.add('hidden');
             document.getElementById('overlaySuccess').classList.remove('hidden');
-
-            // 🚀 ব্রাউজার অটো-ক্লোজ ট্রিকস (২ সেকেন্ড পর)
-            setTimeout(() => {
-                window.close(); // যদি ব্রাউজার সিকিউরিটি পারমিট করে তবে সাথে সাথে কেটে যাবে
-            }, 2000);
+            setTimeout(() => { window.close(); }, 2000);
         }
 
-        // 🚀 Error Handler
         function handleError(msg) {
             clearInterval(checkTimer);
             if(currentTrxRef) currentTrxRef.off();
-
             document.getElementById('overlayLoading').classList.add('hidden');
             document.getElementById('overlayError').classList.remove('hidden');
             document.getElementById('overlayErrorText').innerText = msg;
         }
 
-        // 🚀 Cancel Function
         function cancelChecking() {
             clearInterval(checkTimer);
             if(currentTrxRef) currentTrxRef.off();
-            closeOverlay();
+            document.getElementById('processingOverlay').classList.add('hidden');
         }
-
-        // 🚀 Close Overlay Function
+        
         function closeOverlay() {
             document.getElementById('processingOverlay').classList.add('hidden');
         }
