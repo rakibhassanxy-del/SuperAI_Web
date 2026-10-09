@@ -173,16 +173,18 @@
     </footer>
 
     <script>
-        // 🚀 আপনার ফায়ারবেস কনফিগারেশন এখানে বসান
+        // 🚀 আপনার রিয়েল ফায়ারবেস কনফিগারেশন 
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-            projectId: "YOUR_PROJECT",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyB-NCmudmSQnEry-RsgS-IEUq9mxrR8WgM",
+            authDomain: "super-ai-typing.firebaseapp.com",
+            databaseURL: "https://super-ai-typing-default-rtdb.firebaseio.com",
+            projectId: "super-ai-typing",
+            storageBucket: "super-ai-typing.firebasestorage.app",
+            messagingSenderId: "172185984183",
+            appId: "1:172185984183:web:747204766f1097d9ea4132"
         };
+        
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -268,7 +270,7 @@
                 date: formatDate()
             };
 
-            // 🚀 Push to Firebase
+            // 🚀 Push to Firebase Realtime Database
             db.ref('transactions/' + trxId).set(transactionData)
             .then(() => {
                 
